@@ -1,17 +1,49 @@
 import { Request, Response } from 'express';
 import { StudentServices } from './student.service';
+import studentZodValidationSchema from './student.Zod.validation'; // For Zod Validation
+// import studentJoiValidationSchema from './student.validation'; //For Joi validation
 
 const createStudent = async (req: Request, res: Response) => {
   try {
     const { student: studentData } = req.body;
-    const result = await StudentServices.createStudentIntoDB(studentData);
+
+    //Joi validation start
+    //using Joi validation
+    // const { error, value } = studentJoiValidationSchema.validate(studentData);
+    // const result = await StudentServices.createStudentIntoDB(value);
+
+    // console.log({error}, {value});
+
+    // if (error) {
+    //   res.status(500).json({
+    //     success: false,
+    //     message: 'Student couldnot created... validate error found in Joi!!!',
+    //     error: error.details,
+    //   });
+    // }
+    //else
+    //Joi validation End
+
+    //Zod validation Start
+
+    const zodParsedData = studentZodValidationSchema.parse(studentData);
+    const result = await StudentServices.createStudentIntoDB(zodParsedData);
+
+    //Zod validation end
+
+    //using normal
+    // const result = await StudentServices.createStudentIntoDB(studentData);
     res.status(200).json({
       success: true,
       message: 'Student created successfully',
       data: result,
     });
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Student could not create successfully',
+      error: error,
+    });
   }
 };
 
@@ -24,7 +56,11 @@ const getAllStudents = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error) {
-    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: 'Students not fetched successfully',
+      error: error,
+    });
   }
 };
 
@@ -38,7 +74,11 @@ const getSingleStudent = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error) {
-    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: 'Student id is not fetched successfully',
+      error: error,
+    });
   }
 };
 
