@@ -12,7 +12,7 @@ app.use(cors());
 app.use('/api/vi/students', StudentRoute);
 
 app.get('/', (req: Request, res: Response) => {
-  res.send('Hello !!!!!!!!!!! I am running');
+  res.send('Hey!!!!!!!!!!!Welcome to mongoose first project');
 });
 
 export default app;
