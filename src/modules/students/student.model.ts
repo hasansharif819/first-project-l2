@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import bcrypt from 'bcrypt';
 // import validator from 'validator';
 import {
   TGuardian,
@@ -8,6 +9,7 @@ import {
   StudentModel,
   TUserName,
 } from './student.interface';
+import config from '../../config';
 
 const userNameSchema = new Schema<TUserName>({
   firstName: {
@@ -104,61 +106,121 @@ const localGuardianSchema = new Schema<TLocalGuardian>({
 // const studentSchema = new Schema<TStudent, StudentModel, StudentMethods>({
 
 //For creating custom static methods
-const studentSchema = new Schema<TStudent, StudentModel>({
-  id: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  name: {
-    type: userNameSchema,
-    required: true,
-  },
-  gender: {
-    type: String,
-    enum: {
-      values: ['Male', 'Female', 'Others'],
-      message: '{VALUE} is not a valid gender',
+const studentSchema = new Schema<TStudent, StudentModel>(
+  {
+    id: {
+      type: String,
+      required: true,
+      unique: true,
     },
-    required: true,
-  },
-  dateOfBirth: { type: String, required: true },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    // validate: {
-    //   validator: (value: string) => validator.isEmail(value),
-    //   message: '{VALUE} is not a valid email',
-    // },
-  },
-  contactNo: { type: String, required: true },
-  emergencyContact: { type: String, required: true },
-  bloodGroup: {
-    type: String,
-    enum: {
-      values: ['A+', 'B+', 'AB+', 'O+', 'A-', 'B-', 'AB-', 'O-'],
-      message: 'Please provide your blood group',
+    password: {
+      type: String,
+      maxlength: 20,
+      required: true,
+    },
+    name: {
+      type: userNameSchema,
+      required: true,
+    },
+    gender: {
+      type: String,
+      enum: {
+        values: ['Male', 'Female', 'Others'],
+        message: '{VALUE} is not a valid gender',
+      },
+      required: true,
+    },
+    dateOfBirth: { type: String, required: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      // validate: {
+      //   validator: (value: string) => validator.isEmail(value),
+      //   message: '{VALUE} is not a valid email',
+      // },
+    },
+    contactNo: { type: String, required: true },
+    emergencyContact: { type: String, required: true },
+    bloodGroup: {
+      type: String,
+      enum: {
+        values: ['A+', 'B+', 'AB+', 'O+', 'A-', 'B-', 'AB-', 'O-'],
+        message: 'Please provide your blood group',
+      },
+    },
+    presentAddress: { type: String, required: true },
+    permanentAddress: { type: String, required: true },
+    guardian: {
+      type: guardinSchema,
+      required: true,
+    },
+    localGuardian: {
+      type: localGuardianSchema,
+      required: true,
+    },
+    profilePicture: {
+      type: String,
+    },
+    isActive: {
+      type: String,
+      enum: ['Active', 'Block'],
+      default: 'Active',
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
-  presentAddress: { type: String, required: true },
-  permanentAddress: { type: String, required: true },
-  guardian: {
-    type: guardinSchema,
-    required: true,
+  {
+    toJSON: { virtuals: true },
   },
-  localGuardian: {
-    type: localGuardianSchema,
-    required: true,
-  },
-  profilePicture: {
-    type: String,
-  },
-  isActive: {
-    type: String,
-    enum: ['Active', 'Block'],
-    default: 'Active',
-  },
+);
+
+//virtual
+studentSchema.virtual('fullName').get(function () {
+  return `${this.name.firstName} ${this.name.middleName} ${this.name.lastName}`;
+});
+
+//Middleware
+//Pre middleware save // hook
+studentSchema.pre('save', async function (next) {
+  // console.log(this, 'pre save');
+
+  //Hashing the password by using bcrypt
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const user = this; //doc
+  user.password = await bcrypt.hash(
+    user.password,
+    Number(config.bcrypt_salt_rounds),
+  );
+  next();
+});
+
+//post middleware save // hook
+studentSchema.post('save', async function (doc, next) {
+  doc.password = '';
+  // console.log(this, 'post save');
+  next();
+});
+
+//Query Middleware
+//isDeleted field true hole data show korbe na
+studentSchema.pre('find', function (next) {
+  this.find({ isDeleted: { $ne: true } });
+  next();
+});
+//findOne er jonno
+studentSchema.pre('find', function (next) {
+  this.findOne({ isDeleted: { $ne: true } });
+  next();
+});
+
+//Aggregate function er jonno
+
+studentSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+  next();
 });
 
 //Creating a custom instance method

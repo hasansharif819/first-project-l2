@@ -38,6 +38,7 @@ const createStudent = async (req: Request, res: Response) => {
       message: 'Student created successfully',
       data: result,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     res.status(500).json({
       success: false,
@@ -55,10 +56,10 @@ const getAllStudents = async (req: Request, res: Response) => {
       message: 'Students fetched successfully',
       data: result,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Students not fetched successfully',
+      message: error.message || 'Students not fetched successfully',
       error: error,
     });
   }
@@ -73,10 +74,28 @@ const getSingleStudent = async (req: Request, res: Response) => {
       message: 'Single student fetched successfully',
       data: result,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Student id is not fetched successfully',
+      message: error.message || 'Student id is not fetched successfully',
+      error: error,
+    });
+  }
+};
+
+const deleteStudent = async (req: Request, res: Response) => {
+  try {
+    const { studentId } = req.params;
+    const result = await StudentServices.deleteStudentFromDB(studentId);
+    res.status(200).json({
+      success: true,
+      message: 'This student is deleted successfully',
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'This student is not deleted',
       error: error,
     });
   }
@@ -86,4 +105,5 @@ export const StudentController = {
   createStudent,
   getAllStudents,
   getSingleStudent,
+  deleteStudent,
 };
