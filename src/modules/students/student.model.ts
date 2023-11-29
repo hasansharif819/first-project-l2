@@ -1,6 +1,4 @@
 import { Schema, model } from 'mongoose';
-import bcrypt from 'bcrypt';
-// import validator from 'validator';
 import {
   TGuardian,
   TLocalGuardian,
@@ -9,7 +7,6 @@ import {
   StudentModel,
   TUserName,
 } from './student.interface';
-import config from '../../config';
 
 const userNameSchema = new Schema<TUserName>({
   firstName: {
@@ -113,11 +110,18 @@ const studentSchema = new Schema<TStudent, StudentModel>(
       required: true,
       unique: true,
     },
-    password: {
-      type: String,
-      maxlength: 20,
+    user: {
+      type: Schema.Types.ObjectId,
       required: true,
+      unique: true,
+      ref: 'User',
     },
+    // password: {
+    //   type: String,
+    //   maxlength: 20,
+    //   required: true,
+    // },
+    //password comes from user
     name: {
       type: userNameSchema,
       required: true,
@@ -162,11 +166,6 @@ const studentSchema = new Schema<TStudent, StudentModel>(
     profilePicture: {
       type: String,
     },
-    isActive: {
-      type: String,
-      enum: ['Active', 'Block'],
-      default: 'Active',
-    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -182,27 +181,29 @@ studentSchema.virtual('fullName').get(function () {
   return `${this.name.firstName} ${this.name.middleName} ${this.name.lastName}`;
 });
 
-//Middleware
-//Pre middleware save // hook
-studentSchema.pre('save', async function (next) {
-  // console.log(this, 'pre save');
+// //Middleware
+// //Pre middleware save // hook
+// studentSchema.pre('save', async function (next) {
+//   // console.log(this, 'pre save');
 
-  //Hashing the password by using bcrypt
-  // eslint-disable-next-line @typescript-eslint/no-this-alias
-  const user = this; //doc
-  user.password = await bcrypt.hash(
-    user.password,
-    Number(config.bcrypt_salt_rounds),
-  );
-  next();
-});
+//   //Hashing the password by using bcrypt
+//   // eslint-disable-next-line @typescript-eslint/no-this-alias
+//   const user = this; //doc
+//   user.password = await bcrypt.hash(
+//     user.password,
+//     Number(config.bcrypt_salt_rounds),
+//   );
+//   next();
+// });
 
-//post middleware save // hook
-studentSchema.post('save', async function (doc, next) {
-  doc.password = '';
-  // console.log(this, 'post save');
-  next();
-});
+// //post middleware save // hook
+// studentSchema.post('save', async function (doc, next) {
+//   doc.password = '';
+//   // console.log(this, 'post save');
+//   next();
+// });
+
+//password making hash from user
 
 //Query Middleware
 //isDeleted field true hole data show korbe na
