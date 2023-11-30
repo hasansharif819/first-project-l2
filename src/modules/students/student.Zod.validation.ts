@@ -31,7 +31,7 @@ const createStudentZodValidationSchema = z.object({
     student: z.object({
       name: userNameZodValidationSchema,
       gender: z.enum(['Male', 'Female', 'Others']),
-      dateOfBirth: z.string().min(1),
+      dateOfBirth: z.date().optional(),
       email: z.string().email().min(1),
       contactNo: z.string().min(1),
       emergencyContact: z.string().min(1),
