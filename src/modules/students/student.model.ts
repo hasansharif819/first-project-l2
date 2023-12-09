@@ -7,6 +7,8 @@ import {
   StudentModel,
   TUserName,
 } from './student.interface';
+import AppError from '../../errors/appError';
+import httpStatus from 'http-status';
 
 const userNameSchema = new Schema<TUserName>({
   firstName: {
@@ -166,9 +168,17 @@ const studentSchema = new Schema<TStudent, StudentModel>(
     profilePicture: {
       type: String,
     },
+    admissionSemester: {
+      type: Schema.Types.ObjectId,
+      ref: 'AcademicSemester',
+    },
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+    academicDepartment: {
+      type: Schema.Types.ObjectId,
+      ref: 'AcademicDepartment',
     },
   },
   {
@@ -212,7 +222,7 @@ studentSchema.pre('find', function (next) {
   next();
 });
 //findOne er jonno
-studentSchema.pre('find', function (next) {
+studentSchema.pre('findOne', function (next) {
   this.findOne({ isDeleted: { $ne: true } });
   next();
 });
@@ -234,11 +244,22 @@ studentSchema.pre('aggregate', function (next) {
 
 //For creating custom static methods
 
-studentSchema.statics.isUserExists = async function (id: string) {
-  const existingUser = await Student.findOne({ id });
+// studentSchema.statics.isStudentExists = async function (id: string) {
+//   const existingUser = await Student.findOne({ id });
 
-  return existingUser;
-};
+//   return existingUser;
+// };
+
+//query middleware
+studentSchema.pre('findOneAndUpdate', async function (next) {
+  const query = this.getQuery();
+
+  const isStudentExists = await Student.findOne(query);
+  if (!isStudentExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Student is not exists');
+  }
+  next();
+});
 
 //model
 //for normal
